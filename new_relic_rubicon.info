@@ -1,0 +1,4 @@
+name = "New Relic: Rubicon"
+description = "Integrates Drupal with New Relic's Rubicon service."
+core = 7.x
+configure = admin/config/content/clone

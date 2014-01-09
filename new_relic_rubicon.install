@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for the New Relic: Rubicon module.
+ */
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function new_relic_rubicon_uninstall() {
+  $variables = array(
+    'new_relic_rubicon_account_id',
+    'new_relic_rubicon_insert_key',
+    'new_relic_rubicon_baseurl',
+    'new_relic_rubicon_ua',
+    'new_relic_rubicon_collect_accesslog',
+    'new_relic_rubicon_collect_watchdog',
+  );
+
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+}
