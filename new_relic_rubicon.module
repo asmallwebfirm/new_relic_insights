@@ -20,7 +20,7 @@ function new_relic_rubicon_menu() {
     'title' => 'Rubicon Queue Runner',
     'description' => 'Runs through queued Rubicon items.',
     'type' => MENU_CALLBACK,
-    'page callback' => 'new_relic_rubicon_run_queue',
+    'page callback' => 'new_relic_rubicon_run_queue_page',
     'page arguments' => array(1),
     'access callback' => TRUE,
   );
@@ -69,12 +69,14 @@ function new_relic_rubicon_watchdog($data) {
   $data['fullMessage'] = strip_tags(format_string($data['message'], $data['variables']));
 
   // The associative array must be flat, so we merge in all variables.
-  foreach ($data['variables'] as $key => $value) {
-    unset($data['variables'][$key]);
-    $new_key = str_replace(array('!', '%', '@'), array('_var_', '_var_', '_var_'), $key);
-    $data['variables'][$new_key] = $value;
+  if (isset($data['variables']) && is_array($data['variables'])) {
+    foreach ($data['variables'] as $key => $value) {
+      unset($data['variables'][$key]);
+      $new_key = str_replace(array('!', '%', '@'), array('_var_', '_var_', '_var_'), $key);
+      $data['variables'][$new_key] = $value;
+    }
+    $data = array_merge($data, $data['variables']);
   }
-  $data = array_merge($data, $data['variables']);
   unset($data['variables']);
 
   // Instantiate our queue, add this item to it.
@@ -152,22 +154,49 @@ function new_relic_rubicon_post_event($data) {
 /**
  * Runs through and processes all queued items for New Relic: Rubicon.
  *
+ * @return int
+ *   Returns the number of queued items that were run through.
+ */
+function new_relic_rubicon_run_queue() {
+  $counter = 0;
+
+  $queue = DrupalQueue::get(NEW_RELIC_RUBICON_QUEUE);
+  while ($item = $queue->claimItem()) {
+    new_relic_rubicon_post_event($item->data);
+    $queue->deleteItem($item);
+    $counter++;
+  }
+
+  return $counter;
+}
+
+/**
+ * Page callback for running through queued items through the GUI. Useful if you
+ * want to only run through queued items without running all of cron or if you
+ * don't use drush queue.
+ *
  * @param string $cron_key
  *   A unique token to use to prevent just anyone from running the queue.
  *
  * @return string
- *   Returns a translated string indicating the number of queued items run.
+ *   Output suitable for display as a page.
  */
-function new_relic_rubicon_run_queue($cron_key) {
-  $counter = 0;
+function new_relic_rubicon_run_queue_page($cron_key) {
+  // Do not allow this transaction to be cached.
+  drupal_page_is_cacheable(FALSE);
 
+  // Run through all queued events.
   if ($cron_key == variable_get('cron_key', 'drupal')) {
-    $queue = DrupalQueue::get(NEW_RELIC_RUBICON_QUEUE);
-    while ($item = $queue->claimItem()) {
-      new_relic_rubicon_post_event($item->data);
-      $queue->deleteItem($item);
-      $counter++;
+    // Some New Relic-specific code.
+    if (extension_loaded('newrelic')) {
+      // Mark this transaction as a background job.
+      newrelic_background_job(TRUE);
     }
+
+    // Ensure that no time limit is imposed.
+    set_time_limit(0);
+
+    $counter = new_relic_rubicon_run_queue();
   }
 
   return t('Ran %counter queued items successfully.', array(
