@@ -96,14 +96,15 @@ function new_relic_rubicon_better_statistics_log($data) {
     return;
   }
 
-  // Tell Rubicon what type of event this is.
-  $data['eventType'] = 'accesslog';
-
   // Remove the aid key, it's unpopulated and of no use to us.
   unset($data['aid']);
 
-  $queue = DrupalQueue::get(NEW_RELIC_RUBICON_QUEUE);
-  $queue->createItem($data);
+  // Add custom parameters to this transaction for each Better Stat field.
+  if (extension_loaded('newrelic')) {
+    foreach ($data as $key => $value) {
+      newrelic_add_custom_parameter($key, $value);
+    }
+  }
 }
 
 /**
