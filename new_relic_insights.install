@@ -2,21 +2,21 @@
 
 /**
  * @file
- * Install and update functions for the New Relic: Rubicon module.
+ * Install and update functions for the New Relic Insights module.
  */
 
 
 /**
  * Implements hook_uninstall().
  */
-function new_relic_rubicon_uninstall() {
+function new_relic_insights_uninstall() {
   $variables = array(
-    'new_relic_rubicon_account_id',
-    'new_relic_rubicon_insert_key',
-    'new_relic_rubicon_baseurl',
-    'new_relic_rubicon_ua',
-    'new_relic_rubicon_collect_accesslog',
-    'new_relic_rubicon_collect_watchdog',
+    'new_relic_insights_account_id',
+    'new_relic_insights_insert_key',
+    'new_relic_insights_baseurl',
+    'new_relic_insights_ua',
+    'new_relic_insights_collect_accesslog',
+    'new_relic_insights_collect_watchdog',
   );
 
   foreach ($variables as $variable) {
