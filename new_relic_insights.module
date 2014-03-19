@@ -27,7 +27,7 @@ function new_relic_insights_menu() {
 
   // Configuration page for the module.
   $items['admin/config/development/new-relic-insights'] = array(
-    'title' => 'Configure Insights',
+    'title' => 'New Relic Insights',
     'description' => 'Configure options for the New Relic Insights module.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('new_relic_insights_settings'),
