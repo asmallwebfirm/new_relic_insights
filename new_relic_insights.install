@@ -5,6 +5,19 @@
  * Install and update functions for the New Relic Insights module.
  */
 
+/**
+ * Implements hook_install().
+ */
+function new_relic_insights_install() {
+  // Mark this module to be loaded early in the bootstrap process (this is
+  // required for watchdog/accesslog integrations.
+  db_update('system')
+    ->fields(array(
+      'bootstrap' => 1,
+    ))
+    ->condition('name', 'new_relic_insights', '=')
+    ->execute();
+}
 
 /**
  * Implements hook_uninstall().
