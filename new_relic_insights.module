@@ -2,37 +2,37 @@
 
 /**
  * @file
- * Hooks and functions for the New Relic: Rubicon module.
+ * Hooks and functions for the New Relic Insights module.
  */
 
 
 /**
- * Defines the name of the New Relic: Rubicon queue.
+ * Defines the name of the New Relic Insights queue.
  */
-define('NEW_RELIC_RUBICON_QUEUE', 'new_relic_rubicon');
+define('NEW_RELIC_INSIGHTS_QUEUE', 'new_relic_insights');
 
 /**
  * Implements hook_menu().
  */
-function new_relic_rubicon_menu() {
+function new_relic_insights_menu() {
   // Queue runner callback (so you don't have to run cron to run the queue).
-  $items['new-relic-rubicon-runner/%'] = array(
-    'title' => 'Rubicon Queue Runner',
-    'description' => 'Runs through queued Rubicon items.',
+  $items['new-relic-insights-runner/%'] = array(
+    'title' => 'Insights Queue Runner',
+    'description' => 'Runs through queued Insights items.',
     'type' => MENU_CALLBACK,
-    'page callback' => 'new_relic_rubicon_run_queue_page',
+    'page callback' => 'new_relic_insights_run_queue_page',
     'page arguments' => array(1),
     'access callback' => TRUE,
   );
 
   // Configuration page for the module.
-  $items['admin/config/development/rubicon'] = array(
-    'title' => 'Rubicon',
-    'description' => 'Configure options for the New Relic: Rubicon module.',
+  $items['admin/config/development/new-relic-insights'] = array(
+    'title' => 'Configure Insights',
+    'description' => 'Configure options for the New Relic Insights module.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('new_relic_rubicon_settings'),
-    'access arguments' => array('administer new relic rubicon'),
-    'file' => 'new_relic_rubicon.admin.inc',
+    'page arguments' => array('new_relic_insights_settings'),
+    'access arguments' => array('administer new relic insights'),
+    'file' => 'new_relic_insights.admin.inc',
   );
 
   return $items;
@@ -41,11 +41,11 @@ function new_relic_rubicon_menu() {
 /**
  * Implements hook_permission().
  */
-function new_relic_rubicon_permission() {
+function new_relic_insights_permission() {
   return array(
-    'administer new relic rubicon' => array(
-      'title' => t('Administer New Relic: Rubicon'),
-      'description' => t('Perform administration tasks for New Relic: Rubicon.'),
+    'administer new relic insights' => array(
+      'title' => t('Administer New Relic Insights'),
+      'description' => t('Perform administration tasks for New Relic Insights.'),
     ),
   );
 }
@@ -53,13 +53,13 @@ function new_relic_rubicon_permission() {
 /**
  * Implements hook_watchdog().
  */
-function new_relic_rubicon_watchdog($data) {
-  // Only send watchdog data to Rubicon if enabled.
-  if (!variable_get('new_relic_rubicon_collect_watchdog', FALSE)) {
+function new_relic_insights_watchdog($data) {
+  // Only send watchdog data to Insights if enabled.
+  if (!variable_get('new_relic_insights_collect_watchdog', FALSE)) {
     return;
   }
 
-  // Tell Rubicon what type of event this is.
+  // Tell Insights what type of event this is.
   $data['eventType'] = 'watchdog';
 
   // Truncate the user object down to just the user's e-mail address.
@@ -83,16 +83,16 @@ function new_relic_rubicon_watchdog($data) {
   unset($data['variables']);
 
   // Instantiate our queue, add this item to it.
-  $queue = DrupalQueue::get(NEW_RELIC_RUBICON_QUEUE);
+  $queue = DrupalQueue::get(NEW_RELIC_INSIGHTS_QUEUE);
   $queue->createItem($data);
 }
 
 /**
  * Implements hook_better_statistics_log().
  */
-function new_relic_rubicon_better_statistics_log($data) {
-  // Only send accesslog data to Rubicon if enabled.
-  if (!variable_get('new_relic_rubicon_collect_accesslog', FALSE)) {
+function new_relic_insights_better_statistics_log($data) {
+  // Only send accesslog data to Insights if enabled.
+  if (!variable_get('new_relic_insights_collect_accesslog', FALSE)) {
     return;
   }
 
@@ -110,28 +110,28 @@ function new_relic_rubicon_better_statistics_log($data) {
 /**
  * Implements hook_cron_queue_info().
  */
-function new_relic_rubicon_cron_queue_info() {
+function new_relic_insights_cron_queue_info() {
   return array(
-    NEW_RELIC_RUBICON_QUEUE => array(
-      'worker callback' => 'new_relic_rubicon_post_event',
+    NEW_RELIC_INSIGHTS_QUEUE => array(
+      'worker callback' => 'new_relic_insights_post_event',
       'time' => 120,
     ),
   );
 }
 
 /**
- * Sends a single event, represented as an associative array, to Rubicon.
+ * Sends a single event, represented as an associative array, to Insights.
  *
  * @param array $data
- *   An associative array of data to be JSON encoded and POSTed to Rubicon.
+ *   An associative array of data to be JSON encoded and POSTed to Insights.
  */
-function new_relic_rubicon_post_event($data) {
+function new_relic_insights_post_event($data) {
   // Only proceed if an account ID and insert key are present.
-  $account_id = variable_get('new_relic_rubicon_account_id', '');
-  $insert_key = variable_get('new_relic_rubicon_insert_key', '');
+  $account_id = variable_get('new_relic_insights_account_id', '');
+  $insert_key = variable_get('new_relic_insights_insert_key', '');
   if ($account_id && $insert_key) {
-    // Build the Rubicon Insert API URL.
-    $url = variable_get('new_relic_rubicon_baseurl', 'https://rubicon.newrelic.com/beta_api');
+    // Build the Insights Insert API URL.
+    $url = variable_get('new_relic_insights_baseurl', 'https://insights.newrelic.com/beta_api');
     $url .= '/accounts/' . $account_id;
     $url .= '/events';
 
@@ -147,7 +147,7 @@ function new_relic_rubicon_post_event($data) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
       'Content-Type: application/json',
       'Content-Length: ' . strlen($data),
-      'User-Agent: ' . variable_get('new_relic_rubicon_ua', 'Drupal (+http://drupal.org/)'),
+      'User-Agent: ' . variable_get('new_relic_insights_ua', 'Drupal (+http://drupal.org/)'),
       'X-Insert-Key: ' . $insert_key,
     ));
     curl_exec($ch);
@@ -156,17 +156,17 @@ function new_relic_rubicon_post_event($data) {
 }
 
 /**
- * Runs through and processes all queued items for New Relic: Rubicon.
+ * Runs through and processes all queued items for New Relic Insights.
  *
  * @return int
  *   Returns the number of queued items that were run through.
  */
-function new_relic_rubicon_run_queue() {
+function new_relic_insights_run_queue() {
   $counter = 0;
 
-  $queue = DrupalQueue::get(NEW_RELIC_RUBICON_QUEUE);
+  $queue = DrupalQueue::get(NEW_RELIC_INSIGHTS_QUEUE);
   while ($item = $queue->claimItem()) {
-    new_relic_rubicon_post_event($item->data);
+    new_relic_insights_post_event($item->data);
     $queue->deleteItem($item);
     $counter++;
   }
@@ -185,7 +185,7 @@ function new_relic_rubicon_run_queue() {
  * @return string
  *   Output suitable for display as a page.
  */
-function new_relic_rubicon_run_queue_page($cron_key) {
+function new_relic_insights_run_queue_page($cron_key) {
   // Do not allow this transaction to be cached.
   drupal_page_is_cacheable(FALSE);
 
@@ -200,7 +200,7 @@ function new_relic_rubicon_run_queue_page($cron_key) {
     // Ensure that no time limit is imposed.
     set_time_limit(0);
 
-    $counter = new_relic_rubicon_run_queue();
+    $counter = new_relic_insights_run_queue();
   }
 
   return t('Ran %counter queued items successfully.', array(
