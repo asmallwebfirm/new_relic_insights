@@ -1,4 +1,4 @@
-name = "New Relic: Rubicon"
-description = "Integrates Drupal with New Relic's Rubicon service."
+name = "New Relic Insights"
+description = "Integrates Drupal with New Relic Insights."
 core = 7.x
-configure = admin/config/content/clone
+configure = admin/config/development/new-relic-insights
