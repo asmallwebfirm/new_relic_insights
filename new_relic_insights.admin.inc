@@ -25,9 +25,18 @@ function new_relic_insights_settings($form_state) {
   $form['new_relic_insights_insert_key'] = array(
     '#type' => 'textfield',
     '#title' => t('Insert API Key'),
-    '#description' => t('The Insert Key generated for your Insights account.'),
+    '#description' => t('An Insert Key generated for your Insights account.'),
     '#required' => TRUE,
     '#default_value' => variable_get('new_relic_insights_insert_key', ''),
+  );
+
+  // Query Key
+  $form['new_relic_insights_query_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Query Key'),
+    '#description' => t('A query key generated for your Insights account. This is required in order to query Insights.'),
+    '#required' => FALSE,
+    '#default_value' => variable_get('new_relic_insights_query_key', ''),
   );
 
   // Watchdog integration

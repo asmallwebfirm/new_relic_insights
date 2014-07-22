@@ -26,6 +26,7 @@ function new_relic_insights_uninstall() {
   $variables = array(
     'new_relic_insights_account_id',
     'new_relic_insights_insert_key',
+    'new_relic_insights_query_key',
     'new_relic_insights_baseurl',
     'new_relic_insights_ua',
     'new_relic_insights_collect_accesslog',
