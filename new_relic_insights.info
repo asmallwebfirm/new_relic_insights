@@ -5,5 +5,9 @@ configure = admin/config/development/new-relic-insights
 
 dependencies[] = remote_entity
 
+; Entity API includes.
+files[] = src/Insight.inc
+files[] = src/InsightEntityController.inc
+
 ; Clients / Remote Entity includes.
 files[] = src/clients_connection_new_relic_insights_query.inc

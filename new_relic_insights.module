@@ -51,6 +51,61 @@ function new_relic_insights_permission() {
 }
 
 /**
+ * Implements hook_entity_info().
+ */
+function new_relic_insights_entity_info() {
+  // Only declare an Insight entity if Insights is queryable to begin with.
+  if (!new_relic_insights_is_queryable()) {
+    return array();
+  }
+
+  $entities['insight'] = array(
+    'label' => t('New Relic Insight'),
+    'entity class' => 'Insight',
+    'controller class' => 'InsightEntityController',
+    'metadata controller class' => 'RemoteEntityAPIDefaultMetadataController',
+    'base table' => 'insight',
+    'fieldable' => FALSE,
+    'entity keys' => array(
+      'id' => 'eid',
+      'bundle' => 'type',
+    ),
+    'bundles' => array(
+      'Transaction' => array(
+        'remote entity conditions' => array(
+          'name' => 'isset',
+          'realAgentId' => 'isset',
+        ),
+      ),
+      'PageView' => array(
+        'remote entity conditions' => array(
+          'name' => 'isset',
+          'backendDuration' => 'isset',
+        ),
+      ),
+      'watchdog' => array(
+        'remote entity conditions' => array(
+          'type' => 'isset',
+          'message' => 'isset',
+        ),
+      ),
+    ),
+    'load hook' => 'new_relic_insight_load',
+    'label callback' => 'entity_class_label',
+    'uri callback' => 'entity_class_uri',
+    'module' => 'new_relic_insights_entity',
+    'access callback' => '', // @todo
+    'remote base table' => 'Transaction',
+    'remote entity keys' => array(
+      'remote id' => 'iid',
+    ),
+    'property map' => drupal_map_assoc(new_relic_insights_entity_properties('Transaction')),
+  );
+
+  return $entities;
+}
+
+/**
  * Implements hook_clients_connection_type_info().
  */
 function new_relic_insights_clients_connection_type_info() {
@@ -277,4 +332,152 @@ function new_relic_insights_is_queryable() {
   $query_key = variable_get('new_relic_insights_query_key', '');
 
   return $account && $query_key && module_exists('remote_entity');
+}
+
+/**
+ * Returns an array of entity properties for a given Insight event type,
+ * including all enabled fields in Better Statistics, as well as default
+ * properties provided by New Relic.
+ *
+ * @param string $event_type
+ *   The New Relic Insights event type for which we want entity properties.
+ *
+ * @return array
+ *   An array of entity properties associated with the given New Relic Insights
+ *   event type.
+ */
+function new_relic_insights_entity_properties($event_type) {
+  if ($event_type == 'Transaction') {
+    $nr_defaults = new_relic_insights_entity_default_properties($event_type);
+    $nr_defaults = array_keys($nr_defaults);
+    $stats_fields = array();
+
+    // Load fields currently enabled in Better Statistics.
+    if (module_exists('better_statistics')) {
+      $stats_fields = variable_get('better_statistics_fields', better_statistics_get_default_fields());
+      $stats_fields = array_keys($stats_fields);
+    }
+
+    return array_merge($stats_fields, $nr_defaults);
+  }
+
+  return new_relic_insights_entity_default_properties($event_type);
+}
+
+/**
+ * Returns an associative array, keyed by default properties for a given event
+ * type. Their values are field definitions exactly as expected by Better Stats.
+ *
+ * @param string $event_type
+ *   The New Relic Insights event type for which we want default properties.
+ *
+ * @return array
+ *   An array of default properties associated with the given New Relic Insights
+ *   event type. Not to be confused with those provided by Better Statistics. If
+ *   the type provided is not real, an empty array is returned.
+ */
+function new_relic_insights_entity_default_properties($event_type) {
+  $properties = array(
+    'Transaction' => array(
+      'name' => array(
+        'views_field' => array(
+          'title' => t('Transaction name'),
+          'help' => t('The name of the invoked web transaction (e.g. %eg).', array(
+            '%eg' => 'Controller/customers/show',
+          )),
+        ),
+      ),
+      'duration' => array(
+        'views_field' => array(
+          'title' => t('Transaction duration'),
+          'help' => t('The total response time of the request.'),
+        ),
+      ),
+      'transactionType' => array(
+        'views_field' => array(
+          'title' => t('Transaction type'),
+          'help' => t('The type of the transaction (e.g. %eg1 or %eg2).', array(
+            '%eg1' => 'Web',
+            '%eg2' => 'Background',
+          )),
+        ),
+      ),
+      'appName' => array(
+        'views_field' => array(
+          'title' => t('App name'),
+          'help' => t('The name of your application. In many cases, this may just be the name of application server.'),
+        ),
+      ),
+      'timestamp' => array(
+        'views_field' => array(
+          'title' => t('Date/time'),
+          'help' => t('The date/time that the transaction occurred.'),
+        ),
+      ),
+      'realAgentId' => array(
+        'views_field' => array(
+          'title' => t('Real agent ID'),
+          'help' => t('The ID of the New Relic agent reporting.'),
+        ),
+      ),
+      'httpResponseCode' => array(
+        'views_field' => array(
+          'title' => t('HTTP response code'),
+          'help' => t('Numeric response code with which the app responded (e.g. %eg).', array(
+            '%eg' => 200,
+          )),
+        ),
+      ),
+      'webDuration' => array(
+        'views_field' => array(
+          'title' => t('Web duration'),
+          'help' => t('The total response time of all Web transactions.'),
+        ),
+      ),
+      'type' => array(
+        'views_field' => array(
+          'title' => t('Insight type'),
+          'help' => t('The event type. In this case it will always have the value %value.', array(
+            '%value' => 'Transaction',
+          )),
+        ),
+      ),
+      'memcacheDuration' => array(
+        'views_field' => array(
+          'title' => t('Memcache duration'),
+          'help' => t('The total response time of memcache.'),
+        ),
+      ),
+      'host' => array(
+        'views_field' => array(
+          'title' => t('Transaction host'),
+          'help' => t('The name of the application host that processed this request.'),
+        ),
+      ),
+      'appId' => array(
+        'views_field' => array(
+          'title' => t('App ID'),
+          'help' => t('The ID of your application, as recorded by New Relic.'),
+        ),
+      ),
+      'databaseDuration' => array(
+        'views_field' => array(
+          'title' => t('Database duration'),
+          'help' => t('The database response time.'),
+        ),
+      ),
+      'transactionSubType' => array(
+        'views_field' => array(
+          'title' => t('Transaction sub-type'),
+          'help' => t('The detailed type of the transaction (e.g. %eg1 or %eg2).', array(
+            '%eg1' => 'ResqueJob',
+            '%eg2' => 'Custom',
+          )),
+        ),
+      ),
+    ),
+    // @todo PageView and watchdog
+  );
+
+  return isset($properties[$event_type]) ?   $properties[$event_type] : array();
 }
