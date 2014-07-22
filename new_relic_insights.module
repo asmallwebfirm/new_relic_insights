@@ -538,6 +538,12 @@ function new_relic_insights_entity_default_properties($event_type) {
           )),
         ),
       ),
+      'iid' => array(
+        'views_field' => array(
+          'title' => t('Transaction UUID'),
+          'help' => t('The globally unique ID of this Transaction event.'),
+        ),
+      ),
     ),
     // @todo PageView and watchdog
   );
