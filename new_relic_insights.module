@@ -175,6 +175,55 @@ function new_relic_insights_clients_default_resources() {
 }
 
 /**
+ * Implements hook_remote_entity_query_table_info().
+ */
+function new_relic_insights_remote_entity_query_table_info() {
+  $table_data['new_relic_insights_query_default'] = array(
+    'Transaction' => array(
+      // Fields provided by Insights by default which are not of type "text"
+      'fields' => array(
+        'duration' => array('type' => 'decimal'),
+        'timestamp' => array('type' => 'date'),
+        'realAgentId' => array('type' => 'integer'),
+        'httpResponseCode' => array('type' => 'integer'),
+        'webDuration' => array('type' => 'decimal'),
+        'memcacheDuration' => array('type' => 'decimal'),
+        'appId' => array('type' => 'integer'),
+        'databaseDuration' => array('type' => 'decimal'),
+      ),
+    ),
+  );
+
+  return $table_data;
+}
+
+/**
+ * Implements hook_remote_entity_query_table_info_alter().
+ */
+function new_relic_insights_remote_entity_query_table_info_alter(&$table_data) {
+  // Add metadata for fields provided by better statistics.
+  if (module_exists('better_statistics')) {
+    $fields = &$table_data['new_relic_insights_query_default']['Transaction']['fields'];
+    $stats_fields = variable_get('better_statistics_fields', better_statistics_get_default_fields());
+
+    // Use the timestamp as provided by New Relic.
+    unset($stats_fields['timestamp']);
+
+    // Iterate through each Stats field and append schema definitions.
+    foreach ($stats_fields as $field => $definition) {
+      $fields[$field] = $definition['schema'];
+    }
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function new_relic_insights_views_api() {
+  return array('api' => 3);
+}
+
+/**
  * Implements hook_watchdog().
  */
 function new_relic_insights_watchdog($data) {
