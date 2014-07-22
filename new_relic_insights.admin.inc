@@ -39,6 +39,25 @@ function new_relic_insights_settings($form_state) {
     '#default_value' => variable_get('new_relic_insights_query_key', ''),
   );
 
+  // Configurable expiry time.
+  $expiry_times = drupal_map_assoc(array(0, 60, 300, 900, 3600, 10800, 21600, 43200, 86400, 604800, 2592000), 'format_interval');
+  $expiry_times[0] = '<' . t('never') . '>';
+  $form['new_relic_insights_expiry_time'] = array(
+    '#type' => 'select',
+    '#title' => t('Insights query data expiry time'),
+    '#description' => t('Insights are queried and stored locally to speed up query response; depending on the number and size of objects returned, this can cause bloat. Set this to regularly purge locally cached Insight results after a given interval.'),
+    '#required' => FALSE,
+    '#options' => $expiry_times,
+    '#default_value' => variable_get('new_relic_insights_expiry_time', 0),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="new_relic_insights_query_key"]' => array(
+          'filled' => TRUE,
+        ),
+      ),
+    ),
+  );
+
   // Watchdog integration
   $form['new_relic_insights_collect_watchdog'] = array(
     '#type' => 'checkbox',

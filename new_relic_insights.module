@@ -102,6 +102,14 @@ function new_relic_insights_entity_info() {
     'property map' => drupal_map_assoc(new_relic_insights_entity_properties('Transaction')),
   );
 
+  // Respect the configured expiry time (if provided).
+  if ($expiry_time = variable_get('new_relic_insights_expiry_time', 0)) {
+    $entities['insight']['expiry'] = array(
+      'expiry time' => $expiry_time,
+      'purge' => TRUE,
+    );
+  }
+
   return $entities;
 }
 
