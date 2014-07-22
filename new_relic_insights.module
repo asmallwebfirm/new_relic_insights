@@ -217,6 +217,56 @@ function new_relic_insights_remote_entity_query_table_info_alter(&$table_data) {
 }
 
 /**
+ * Implements hook_entity_query_alter().
+ *
+ * Allows the native use of EntityFieldQuery to query Insights.
+ */
+function new_relic_insights_entity_query_alter($query) {
+  if (isset($query->entityConditions['entity_type']['value'])) {
+    if ($query->entityConditions['entity_type']['value'] === 'insight') {
+      // It's possible we don't want to remotely query Insights (and instead,
+      // query just local copies). We check for that situation by checking if
+      // any property conditions have been set against db schema properties.
+      $schema = drupal_get_schema('insight');
+      $internals = array_keys($schema['fields']);
+      foreach ($query->propertyConditions as $condition) {
+        if (in_array($condition['column'], $internals)) {
+          return;
+        }
+      }
+
+      // Add InsightRemoteEntityQuery to the EntityFieldQuery object.
+      $controller = entity_get_controller('insight');
+      $remote_query = $controller->getRemoteEntityQuery();
+      $query->remoteQuery = $remote_query;
+
+      // Set the EntityFieldQuery execution callback to ours, which will call
+      // the InsightRemoteEntityQuery::buildFromEFQ()
+      $query->executeCallback = '_new_relic_insights_execute_from_efq';
+    }
+  }
+}
+
+/**
+ * Execution callback for EntityFieldQuery when a remote entity type is being
+ * queried and has the appropriate methods.
+ *
+ * @param EntityFieldQuery $efq
+ *   The EntityFieldQuery object with which the remote entity query will be
+ *   built and executed.
+ *
+ * @return mixed
+ *   Either a number if count() was called or an array of associative arrays of
+ *   remote entities.
+ *
+ * @see remote_entity_entity_query_alter()
+ * @see EntityFieldQuery::queryCallback()
+ */
+function _new_relic_insights_execute_from_efq(EntityFieldQuery $efq) {
+  return $efq->remoteQuery->buildFromEFQ($efq)->execute();
+}
+
+/**
  * Implements hook_views_api().
  */
 function new_relic_insights_views_api() {
