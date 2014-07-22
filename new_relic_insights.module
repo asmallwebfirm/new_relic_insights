@@ -51,6 +51,67 @@ function new_relic_insights_permission() {
 }
 
 /**
+ * Implements hook_clients_connection_type_info().
+ */
+function new_relic_insights_clients_connection_type_info() {
+  return array(
+    'new_relic_insights_query' => array(
+      'label'  => t('New Relic Insights Query'),
+      'description' => t('Queries New Relic Insights'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_clients_default_connections().
+ */
+function new_relic_insights_clients_default_connections() {
+  $items = array();
+
+  if (new_relic_insights_is_queryable()) {
+    $account = variable_get('new_relic_insights_account_id', '');
+    $query_key = variable_get('new_relic_insights_query_key', '');
+
+    $items['new_relic_insights_query_default'] = entity_import('clients_connection', '{
+      "name" : "new_relic_insights_query_default",
+      "endpoint" : "https:\\/\\/insights-api.newrelic.com\\/v1\\/accounts\\/' . $account .'",
+      "configuration" : {
+        "debug" : 0,
+        "credentials_storage" : "connection_configuration",
+        "account" : "' . $account . '",
+        "key" : "' . $query_key . '"
+      },
+      "label" : "Default New Relic Insights Query Client",
+      "type" : "new_relic_insights_query"
+    }');
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_clients_default_resources().
+ */
+function new_relic_insights_clients_default_resources() {
+  $items = array();
+
+  if (new_relic_insights_is_queryable()) {
+    $items['new_relic_insight_default_entity'] = entity_import('clients_resource', '{
+      "remoteEntityQuery" : null,
+      "component" : "insight",
+      "connection" : "new_relic_insights_query_default",
+      "name" : "new_relic_insight_default_entity",
+      "label" : "Default New Relic Insights Entity",
+      "type" : "remote_entity",
+      "configuration" : null,
+      "rdf_mapping" : []
+    }');
+  }
+
+  return $items;
+}
+
+/**
  * Implements hook_watchdog().
  */
 function new_relic_insights_watchdog($data) {
@@ -206,4 +267,14 @@ function new_relic_insights_run_queue_page($cron_key) {
   return t('Ran %counter queued items successfully.', array(
     '%counter' => $counter,
   ));
+}
+
+/**
+ * Returns whether or not New Relic Insights are queryable.
+ */
+function new_relic_insights_is_queryable() {
+  $account = variable_get('new_relic_insights_account_id', '');
+  $query_key = variable_get('new_relic_insights_query_key', '');
+
+  return $account && $query_key && module_exists('remote_entity');
 }

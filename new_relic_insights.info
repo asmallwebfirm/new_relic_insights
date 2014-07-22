@@ -2,3 +2,8 @@ name = "New Relic Insights"
 description = "Integrates Drupal with New Relic Insights."
 core = 7.x
 configure = admin/config/development/new-relic-insights
+
+dependencies[] = remote_entity
+
+; Clients / Remote Entity includes.
+files[] = src/clients_connection_new_relic_insights_query.inc
