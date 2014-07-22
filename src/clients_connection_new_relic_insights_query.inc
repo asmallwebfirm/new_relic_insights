@@ -106,14 +106,34 @@ class clients_connection_new_relic_insights_query extends clients_connection_bas
    * {@inheritdoc}
    */
   function getRemoteEntityQuery() {
-    // @todo
+    return new InsightRemoteEntityQuery($this);
   }
 
   /**
    * {@inheritdoc}
    */
   function entity_property_type_map() {
-    // @todo
+    return array(
+      // Defaults provided by Entity API.
+      'text' => 'text',
+      'integer' => 'integer',
+      'decimal' => 'decimal',
+      'date' => 'date',
+      'token' => 'token',
+      'boolean' => 'boolean',
+      'uri' => 'uri',
+      'entities' => 'entities',
+      'entity' => 'entity',
+      'struct' => 'struct',
+      'list' => 'list',
+      // Mapping hook_schema schema types to Entity API schema types.
+      'int' => 'integer',
+      'varchar' => 'text',
+      'serial' => 'int',
+      'float' => 'decimal',
+      'numeric' => 'integer',
+      'blob' => 'text',
+    );
   }
 
   // ============================================ Resource retrieval.

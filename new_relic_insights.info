@@ -11,3 +11,4 @@ files[] = src/InsightEntityController.inc
 
 ; Clients / Remote Entity includes.
 files[] = src/clients_connection_new_relic_insights_query.inc
+files[] = src/InsightRemoteEntityQuery.inc
