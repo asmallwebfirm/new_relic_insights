@@ -1,7 +1,7 @@
 name = "New Relic Insights"
 description = "Integrates Drupal with New Relic Insights."
 core = 7.x
-configure = admin/config/development/new-relic-insights
+configure = admin/config/services/new-relic-insights
 
 dependencies[] = remote_entity
 
