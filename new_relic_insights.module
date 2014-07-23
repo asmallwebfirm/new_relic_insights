@@ -360,7 +360,7 @@ function new_relic_insights_post_event($data) {
   $insert_key = variable_get('new_relic_insights_insert_key', '');
   if ($account_id && $insert_key) {
     // Build the Insights Insert API URL.
-    $url = variable_get('new_relic_insights_baseurl', 'https://insights.newrelic.com/beta_api');
+    $url = variable_get('new_relic_insights_baseurl', 'https://insights-collector.newrelic.com/v1');
     $url .= '/accounts/' . $account_id;
     $url .= '/events';
 
