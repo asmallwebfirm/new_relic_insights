@@ -438,6 +438,14 @@ function new_relic_insights_run_queue_page($cron_key) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function new_relic_insights_form_statistics_settings_form_alter(&$form, &$form_state) {
+  module_load_include('inc', 'new_relic_insights', 'new_relic_insights.admin');
+  _new_relic_insights_form_statistics_settings_form_alter($form, $form_state);
+}
+
+/**
  * Returns whether or not New Relic Insights are queryable.
  */
 function new_relic_insights_is_queryable() {

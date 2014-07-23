@@ -76,3 +76,25 @@ function new_relic_insights_settings($form_state) {
 
   return system_settings_form($form);
 }
+
+/**
+ * Adds an "enable database logging" checkbox to the statistics config page.
+ *
+ * @see new_relic_insights_form_statistics_settings_form_alter()
+ */
+function _new_relic_insights_form_statistics_settings_form_alter(&$form, &$form_state) {
+  // Give the option to disable database logging.
+  $form['access']['statistics_log_to_db'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable database logging'),
+    '#description' => t('Uncheck this to log access statistics only via New Relic Insights.'),
+    '#default_value' => variable_get('statistics_log_to_db', TRUE),
+  );
+
+  // If database logging is disabled, we don't care about access log flushing.
+  $form['access']['statistics_flush_accesslog_timer']['#states'] = array(
+    'visible' => array(
+      ':input[name="statistics_log_to_db"]' => array('checked' => TRUE),
+    ),
+  );
+}
