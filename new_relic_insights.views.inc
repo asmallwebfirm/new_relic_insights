@@ -17,7 +17,7 @@ function new_relic_insights_views_data_alter(&$data) {
 
   // Rename the EntityFieldQuery label.
   if (isset($data['efq_insight'])) {
-    $data['efq_insight']['table']['base']['title'] = t('New Relic Insight');
+    $data['efq_insight']['table']['base']['title'] = t('Insights');
 
     // Loop through custom properties provided by Better Stats and apply them.
     if (module_exists('better_statistics')) {
