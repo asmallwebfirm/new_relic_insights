@@ -53,9 +53,9 @@ function new_relic_insights_permission() {
 /**
  * Implements hook_entity_info().
  */
-function new_relic_insights_entity_info() {
+function new_relic_insights_entity_info($force_get = FALSE) {
   // Only declare an Insight entity if Insights is queryable to begin with.
-  if (!new_relic_insights_is_queryable()) {
+  if (!new_relic_insights_is_queryable() && !$force_get) {
     return array();
   }
 

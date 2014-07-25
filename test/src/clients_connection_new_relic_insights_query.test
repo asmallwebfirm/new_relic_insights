@@ -1,0 +1,240 @@
+<?php
+
+/**
+ * @file
+ * Contains tests for the clients_connection_new_relic_insights_query class.
+ */
+
+class NewRelicInsightsClientsConnectionTestCase extends DrupalUnitTestCase {
+
+  /**
+   * Entity info for the Insight entity.
+   * @var array
+   */
+  protected $entityInfo = array();
+
+  /**
+   * A fresh New Relic query client connection for tests.
+   * @var clients_connection_new_relic_insights_query
+   */
+  protected $clientConnection;
+
+  /**
+   * A fake endpoint, expected to be used when querying insights.
+   * @var string
+   */
+  protected $endpoint = 'https://example.com';
+
+  /**
+   * A fake set of client credentials, expected to be used when querying.
+   * @var array
+   */
+  protected $clientCredentials = array(
+    'key' => 'omGWtfbBq1337=',
+    'account' => 1337,
+  );
+
+  public static function getInfo() {
+    return array(
+      'name' => 'New Relic Insights: Clients Connection Tests',
+      'description' => 'Test expected behavior in clients_connection_new_relic_insights_query.',
+      'group' => 'New Relic Insights',
+    );
+  }
+
+  /**
+   * Some insane drupal_static() acrobatics to get our tests to run without
+   * exception.
+   */
+  protected function setUpEntityinfo() {
+    // Force our module to believe Insights is queryable.
+    $GLOBALS['conf']['new_relic_insights_account_id'] = TRUE;
+    $GLOBALS['conf']['new_relic_insights_query_key'] = 'omGWtfbBq1337=';
+    $system_list = &drupal_static('system_list', array());
+    $system_list = array('module_enabled' => array('remote_entity' => 'remote_entity'));
+
+    // Inject our defined entity info from the main .module file.
+    $this->require_once_insanity('function', 'new_relic_insights_entity_info', __DIR__ .'/../../new_relic_insights.module');
+    $this->entityInfo = new_relic_insights_entity_info(TRUE);
+  }
+
+  /**
+   * Attempts to allow files to be included / required the same way across the
+   * drupal.org testbot infrastructure and local testing environments.
+   */
+  protected function require_once_insanity($type, $target, $file) {
+    try {
+      switch ($type) {
+        case 'class':
+          if (!class_exists($target)) {
+            require_once($file);
+          }
+          break;
+
+        case 'interface':
+          if (!interface_exists($target)) {
+            require_once($file);
+          }
+          break;
+
+        case 'function':
+          if (!function_exists($target)) {
+            require_once($file);
+          }
+          break;
+      }
+    }
+    // If we're here, we're on d.o, and it's safe to assume the file has not yet
+    // been included. So just include it.
+    catch (PDOException $exception) {
+      require_once($file);
+    }
+  }
+
+  public function setUp() {
+    parent::setUp();
+
+    // Manually load classes to avoid bootstrapping / checking registry.
+    // Order matters!
+    $this->require_once_insanity('class', 'Entity', __DIR__ . '/../../../entity/includes/entity.inc');
+    require_once(__DIR__ . '/../../../clients/includes/clients.entity.inc');
+    require_once(__DIR__ . '/../../../remote_entity/includes/remote_entity.clients.inc');
+    require_once(__DIR__ . '/../../src/clients_connection_new_relic_insights_query.inc');
+    require_once(__DIR__ . '/clients_connection_wrapper.php');
+
+    // Set up entity info and a client connection to test with.
+    $this->setUpEntityinfo();
+    $this->clientConnection = new clients_connection_wrapper(array(), 'insight');
+    $this->clientConnection->endpoint = $this->endpoint;
+    $this->clientConnection->configuration = $this->clientCredentials;
+
+    // Override the drupal_http_request() function to keep track of data.
+    $GLOBALS['conf']['drupal_http_request_function'] = '_new_relic_insights_client_connection_test_request';
+  }
+
+  /**
+   * Tests clients_connection_new_relic_insights_query::getRemoteEntityQuery().
+   */
+  function testGetRemoteEntityQuery() {
+    require_once(__DIR__ . '/../../../remote_entity/includes/remote_entity.query.inc');
+    require_once(__DIR__ . '/../../src/InsightRemoteEntityQuery.inc');
+    $query = $this->clientConnection->getRemoteEntityQuery();
+    $this->assertTrue($query instanceof InsightRemoteEntityQuery, 'The getRemoteEntityQuery method returned an instance of the remote entity query class.');
+  }
+
+  /**
+   * Tests clients_connection_new_relic_insights_query::handleRestError().
+   */
+  function testHandleRestErrorWithError() {
+    $caught_exception = FALSE;
+
+    try {
+      $this->clientConnection->handleRestError((object) array(
+        'code' => 500,
+        'error' => 'Error message',
+      ));
+    }
+    catch (Exception $e) {
+      $caught_exception = TRUE;
+    }
+
+    $this->assertIdentical($caught_exception, TRUE, 'Non-200 threw exception.');
+  }
+
+  /**
+   * Tests clients_connection_new_relic_insights_query::handleRestError().
+   */
+  function testHandleRestErrorNoError() {
+    $caught_exception = FALSE;
+
+    try {
+      $this->clientConnection->handleRestError((object) array(
+        'code' => 200,
+      ));
+    }
+    catch (Exception $e) {
+      $caught_exception = TRUE;
+    }
+
+    $this->assertIdentical($caught_exception, FALSE, '200 response did not throw exception.');
+  }
+
+  /**
+   * Tests clients_connection_new_relic_insights_query::makeRequest().
+   */
+  function testMakeRequest() {
+    $nrql = 'SELECT * FROM Transaction';
+    $this->clientConnection->makeRequest('query', 'GET', array(
+      'nrql' => $nrql,
+    ));
+
+    // Ensure drupal_http_request was called with the expected URL.
+    $request_args = _new_relic_insights_client_connection_test_request();
+    $url_parts = parse_url($request_args['url']);
+    $expected_parts = parse_url($this->endpoint . '/query?nrql=' . urlencode($nrql));
+    foreach ($expected_parts as $part => $value) {
+      $this->assertIdentical($url_parts[$part], $value, format_string('Queried endpoint URL !part matched expectations.', array(
+        '!part' => $part,
+      )));
+    }
+
+    // Ensure drupal_http_request was called with the expected headers.
+    $headers = $request_args['options']['headers'];
+    $method = $request_args['options']['method'];
+    $this->assertIdentical($headers['Accept'], 'application/json', 'JSON accept headers sent with request.');
+    $this->assertIdentical($headers['X-Query-Key'], $this->clientCredentials['key'], 'Query key sent with request.');
+    $this->assertIdentical($method, 'GET', 'Query made using the right scheme.');
+  }
+
+  /**
+   * Tests clients_connection_new_relic_insights_query::callMethodArray().
+   */
+  function testCallMethodArray() {
+    $nrql = 'SELECT * FROM Transaction';
+    $this->clientConnection->callMethodArray('query', array(
+      'GET',
+      array('nrql' => $nrql),
+    ));
+
+    // Ensure drupal_http_request was called with the expected URL.
+    $request_args = _new_relic_insights_client_connection_test_request();
+    $url_parts = parse_url($request_args['url']);
+    $expected_parts = parse_url($this->endpoint . '/query?nrql=' . urlencode($nrql));
+    foreach ($expected_parts as $part => $value) {
+      $this->assertIdentical($url_parts[$part], $value, format_string('Queried endpoint URL !part matched expectations.', array(
+        '!part' => $part,
+      )));
+    }
+
+    // Ensure drupal_http_request was called with the expected headers.
+    $headers = $request_args['options']['headers'];
+    $method = $request_args['options']['method'];
+    $this->assertIdentical($headers['Accept'], 'application/json', 'JSON accept headers sent with request.');
+    $this->assertIdentical($headers['X-Query-Key'], $this->clientCredentials['key'], 'Query key sent with request.');
+    $this->assertIdentical($method, 'GET', 'Query made using the right scheme.');
+  }
+
+}
+
+/**
+ * Overrides drupal_http_request.
+ * @see NewRelicInsightsClientsConnectionTestCase::setUp()
+ */
+function _new_relic_insights_client_connection_test_request($url = NULL, array $options = array()) {
+  static $data = array();
+
+  if ($url === NULL && $options === array()) {
+    return $data;
+  }
+  else {
+    $data['url'] = $url;
+    $data['options'] = $options;
+
+    return (object) array(
+      'code' => 200,
+      'data' => json_encode(array(
+        'stuff',
+      )),
+    );
+  }
+}
