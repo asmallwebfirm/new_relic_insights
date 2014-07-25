@@ -92,11 +92,7 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
   function entityCondition($name, $value, $operator = '=') {
     switch ($name) {
       case 'entity_id':
-        $this->conditions[] = array(
-          'field' => 'iid',
-          'value' => $value,
-          'operator' => $operator,
-        );
+        $this->propertyCondition('iid', $value, $operator);
         break;
 
       // Ignore the entity_type condition.
@@ -122,11 +118,6 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
    * @param string $operator
    */
   function propertyCondition($property_name, $value, $operator = '=') {
-    if (!isset($this->entity_info)) {
-      // @todo exception, base not set.
-      return;
-    }
-
     // Special handling for operators.
     switch ($operator) {
       // NRQL prefers != over <>.
@@ -281,7 +272,7 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
   function execute() {
     // If no NRQL query has yet been built, build it.
     if (empty($this->nrql)) {
-      $this->buildNRQL($this->remote_base);
+      $this->buildNRQL();
     }
 
     // Execute the query via the remote connection.
@@ -318,12 +309,12 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
 
     // Copy each entity condition.
     foreach ($efq->entityConditions as $property => $condition) {
-      // Entity bundle can sometimes be an "IN" operator.
-      if ($property == 'bundle' && $condition['operator'] == 'IN') {
-        $condition['value'] = $condition['value'][0];
-      }
-
       $this->entityCondition($property, $condition['value'], $condition['operator']);
+    }
+
+    // Copy each field condition.
+    foreach ($efq->fields as $condition) {
+      $this->fieldCondition($condition['field'], $condition['value']);
     }
 
     // Copy the count value.
@@ -362,7 +353,7 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
    */
   public function buildNRQL() {
     // Default to the current remote base.
-    $bundle = $this->remote_base;
+    $bundle = empty($this->remote_base) ? 'Transaction' : $this->remote_base;
 
     // Define the query base.
     if (is_array($bundle)) {
