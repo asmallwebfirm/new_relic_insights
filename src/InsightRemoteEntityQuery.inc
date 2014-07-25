@@ -136,8 +136,9 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
         break;
 
       case 'IN':
+        $this->inOutConditions['in'][$property_name] = array();
         foreach ($value as $val) {
-          $this->inOutConditions['in'][] = array(
+          $this->inOutConditions['in'][$property_name][] = array(
             'field' => $property_name,
             'value' => $val,
             'operator' => '=',
@@ -397,17 +398,26 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
         $nrql .= ' AND ';
       }
 
-      $nrql .= '(';
-      foreach ($this->inOutConditions['in'] as $id => $condition) {
-        if ($id > 0) {
-          $nrql .= ' OR ';
+      $in_count = 0;
+      foreach ($this->inOutConditions['in'] as $field => $conditions) {
+        if ($in_count > 0) {
+          $nrql .= ' AND ';
         }
 
-        $nrql .= check_plain($condition['field']) . ' ';
-        $nrql .= check_plain($condition['operator']) . ' ';
-        $nrql .= "'" . check_plain($condition['value']) . "'";
+        $nrql .= '(';
+        foreach ($conditions as $id => $condition) {
+          if ($id > 0) {
+            $nrql .= ' OR ';
+          }
+
+          $nrql .= check_plain($field) . ' ';
+          $nrql .= check_plain($condition['operator']) . ' ';
+          $nrql .= "'" . check_plain($condition['value']) . "'";
+        }
+
+        $nrql .= ')';
+        $in_count++;
       }
-      $nrql .= ')';
     }
 
     // Also iterate through any "out" conditions.

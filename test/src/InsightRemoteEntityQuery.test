@@ -577,10 +577,9 @@ class NewRelicInsightsRemoteEntityQueryTestCase extends DrupalUnitTestCase {
 
     $expected_string = " WHERE ({$conditions[0]['field']} = '{$conditions[0]['value'][0]}' OR ";
     $expected_string .= "{$conditions[0]['field']} = '{$conditions[0]['value'][1]}') AND ";
-    $expected_string .= " ({$conditions[1]['field']} = '{$conditions[1]['value'][0]}' OR ";
+    $expected_string .= "({$conditions[1]['field']} = '{$conditions[1]['value'][0]}' OR ";
     $expected_string .= "{$conditions[1]['field']} = '{$conditions[1]['value'][1]}') ";
-    // @todo Enable this once fixed in #2309343
-    // $this->assertNRQLContains($expected_string, 'NRQL query multiple "IN" conditions supported.');
+    $this->assertNRQLContains($expected_string, 'NRQL query multiple "IN" conditions supported.');
   }
 
   /**
