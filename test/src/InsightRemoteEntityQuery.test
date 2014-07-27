@@ -5,7 +5,7 @@
  * Contains tests for the InsightRemoteEntityQuery class.
  */
 
-class NewRelicInsightsRemoteEntityQueryTestCase extends DrupalUnitTestCase {
+class NewRelicInsightsRemoteEntityQueryTestCase extends NewRelicINsightsUnitTestBase {
 
   /**
    * Mock connection, to be injected into the remote entity query class.
