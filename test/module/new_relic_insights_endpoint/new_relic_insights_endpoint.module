@@ -10,10 +10,10 @@
  * Implements hook_menu().
  */
 function new_relic_insights_endpoint_menu() {
-  $items['insights-insert/accounts/%/events'] = array(
+  $items['insights/accounts/%/%'] = array(
     'title' => 'New Relic Insights Mock Insert API Endpoint',
     'page callback' => 'new_relic_insights_endpoint_callback',
-    'page arguments' => array(2),
+    'page arguments' => array(2, 3),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -24,17 +24,29 @@ function new_relic_insights_endpoint_menu() {
 /**
  * Menu callback for a mock "insert" API endpoint.
  */
-function new_relic_insights_endpoint_callback($account_id) {
+function new_relic_insights_endpoint_callback($account_id, $type) {
   $data = variable_get('new_relic_insights_endpoint_data', array());
+  drupal_page_is_cacheable(FALSE);
 
-  if (!array_key_exists($account_id, $data)) {
-    $data[$account_id] = array();
+  switch ($type) {
+    case 'events':
+      if (!array_key_exists($account_id, $data)) {
+        $data[$account_id] = array();
+      }
+
+      $data[$account_id][] = array(
+        'post' => file_get_contents("php://input"),
+        'headers' => new_relic_insights_endpoint_get_request_headers(),
+      );
+
+      break;
+
+    case 'query':
+      $data[$account_id][] = array(
+        'nrql' => $_GET['nrql'],
+      );
+      break;
   }
-
-  $data[$account_id][] = array(
-    'post' => file_get_contents("php://input"),
-    'headers' => new_relic_insights_endpoint_get_request_headers(),
-  );
 
   variable_set('new_relic_insights_endpoint_data', $data);
 }

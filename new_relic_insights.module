@@ -134,10 +134,12 @@ function new_relic_insights_clients_default_connections() {
   if (new_relic_insights_is_queryable()) {
     $account = variable_get('new_relic_insights_account_id', '');
     $query_key = variable_get('new_relic_insights_query_key', '');
+    $base_url = variable_get('new_relic_insights_baseurl', 'https://insights-collector.newrelic.com/v1');
+    $encoded = addslashes($base_url . '/accounts/' . $account);
 
     $items['new_relic_insights_query_default'] = entity_import('clients_connection', '{
       "name" : "new_relic_insights_query_default",
-      "endpoint" : "https:\\/\\/insights-api.newrelic.com\\/v1\\/accounts\\/' . $account .'",
+      "endpoint" : "' . $encoded . '",
       "configuration" : {
         "debug" : 0,
         "credentials_storage" : "connection_configuration",

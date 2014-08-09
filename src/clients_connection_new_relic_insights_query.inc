@@ -236,6 +236,7 @@ class clients_connection_new_relic_insights_query extends clients_connection_bas
     $headers = array(
       'Accept' => 'application/json',
       'X-Query-Key' => $this->credentials['key'],
+      'User-Agent' => variable_get('new_relic_insights_ua', 'Drupal (+http://drupal.org/)'),
     );
 
     $options = array(
