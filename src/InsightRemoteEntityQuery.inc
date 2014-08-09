@@ -237,10 +237,11 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
    * @todo Document this. There's no differentiation in Insights of what is a
    * property vs. what is a field, so just treat them the same.
    * @param $property_name
+   * @param $column
    * @param $value
    * @param string $operator
    */
-  function fieldCondition($property_name, $value, $operator = '=') {
+  function fieldCondition($property_name, $column, $value, $operator = '=') {
     $this->propertyCondition($property_name, $value, $operator);
   }
 
@@ -315,7 +316,7 @@ class InsightRemoteEntityQuery extends RemoteEntityQuery {
 
     // Copy each field condition.
     foreach ($efq->fields as $condition) {
-      $this->fieldCondition($condition['field'], $condition['value']);
+      $this->fieldCondition($condition['field'], 'value', $condition['value']);
     }
 
     // Copy the count value.

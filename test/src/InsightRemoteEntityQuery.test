@@ -166,7 +166,7 @@ class NewRelicInsightsRemoteEntityQueryTestCase extends NewRelicINsightsUnitTest
   function testFieldConditionArbitrary() {
     $field = $this->randomName();
     $value = $this->randomName();
-    $this->query->fieldCondition($field, $value);
+    $this->query->fieldCondition($field, 'column_ignored', $value);
     $this->assertNRQLContains("$field = '$value'", 'Field condition arbitrary fields supported.');
   }
 
