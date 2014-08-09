@@ -101,14 +101,22 @@ function new_relic_insights_settings_submit($form, &$form_state) {
 
   // If any values are new, we need to clear out caches for immediate effect.
   if ($prior_qkey != $new_qkey || $prior_aid != $new_aid) {
-    // Ensure the Clients connection is updated immediately.
-    cache_clear_all('*', 'cache_clients', TRUE);
-    // Ensure Entity API cached data is updated immediately.
-    entity_flush_caches();
+    drupal_register_shutdown_function('new_relic_insights_rebuild_clients_and_entity');
 
     // Set an HTTP header for debugging / testing purposes.
     drupal_add_http_header('X-Insights-Requisites-Rebuilt', TRUE);
   }
+}
+
+/**
+ * Rebuilds client and entity data.
+ */
+function new_relic_insights_rebuild_clients_and_entity() {
+  // Ensure the Clients connection is updated immediately.
+  cache_clear_all('*', 'cache_clients', TRUE);
+  // Ensure Entity API cached data is updated immediately.
+  entity_info_cache_clear();
+  entity_flush_caches();
 }
 
 /**
