@@ -34,6 +34,7 @@ class NewRelicInsightsBehaviorTestBase extends DrupalWebTestCase {
 
     $endpoint = $this->getAbsoluteUrl('insights');
     variable_set('new_relic_insights_baseurl', $endpoint);
+    variable_set('new_relic_insights_query_baseurl', $endpoint);
     variable_set('new_relic_insights_curl_timeout', 10);
   }
 
