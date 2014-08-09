@@ -329,7 +329,7 @@ function new_relic_insights_better_statistics_log($data) {
   $data['iid'] = new_relic_insights_generate_uuid();
 
   // Add custom parameters to this transaction for each Better Stat field.
-  if (extension_loaded('newrelic')) {
+  if (function_exists('newrelic_add_custom_parameter')) {
     foreach ($data as $key => $value) {
       newrelic_add_custom_parameter($key, $value);
     }
@@ -372,7 +372,7 @@ function new_relic_insights_post_event($data) {
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, variable_get('new_relic_insights_curl_timeout', 5));
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
       'Content-Type: application/json',
       'Content-Length: ' . strlen($data),

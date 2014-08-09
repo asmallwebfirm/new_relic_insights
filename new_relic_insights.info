@@ -19,3 +19,4 @@ files[] = test/src/InsightRemoteEntityQuery.test
 files[] = test/src/clients_connection_new_relic_insights_query.test
 files[] = test/src/Insight.test
 files[] = test/src/UI.test
+files[] = test/src/insert.test

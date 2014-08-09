@@ -1,0 +1,4 @@
+name = New Relic Insights API Endpoint
+description = Provides a mock API endpoint. FOR TESTING ONLY. Do not enable.
+core = 7.x
+hidden = TRUE
