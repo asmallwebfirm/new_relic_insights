@@ -74,7 +74,41 @@ function new_relic_insights_settings($form_state) {
     );
   }
 
+  // Add a validation handler to handle variable/config preparation.
+  $form['#validate'][] = 'new_relic_insights_settings_validate';
+  $form['#submit'][] = 'new_relic_insights_settings_submit';
+
   return system_settings_form($form);
+}
+
+/**
+ * Validation handler for the primary Insights configuration form.
+ */
+function new_relic_insights_settings_validate($form, &$form_state) {
+  // Save existing values of key variables before processing the form.
+  $form_state['_existing_query_key'] = variable_get('new_relic_insights_query_key', '');
+  $form_state['_existing_account_id'] = variable_get('new_relic_insights_account_id', '');
+}
+
+/**
+ * Submit handler for the primary Insights configuration form.
+ */
+function new_relic_insights_settings_submit($form, &$form_state) {
+  $prior_qkey = $form_state['_existing_query_key'];
+  $new_qkey = $form_state['values']['new_relic_insights_query_key'];
+  $prior_aid = $form_state['_existing_account_id'];
+  $new_aid = $form_state['values']['new_relic_insights_account_id'];
+
+  // If any values are new, we need to clear out caches for immediate effect.
+  if ($prior_qkey != $new_qkey || $prior_aid != $new_aid) {
+    // Ensure the Clients connection is updated immediately.
+    cache_clear_all('*', 'cache_clients', TRUE);
+    // Ensure Entity API cached data is updated immediately.
+    entity_flush_caches();
+
+    // Set an HTTP header for debugging / testing purposes.
+    drupal_add_http_header('X-Insights-Requisites-Rebuilt', TRUE);
+  }
 }
 
 /**

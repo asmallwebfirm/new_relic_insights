@@ -84,6 +84,24 @@ class NewRelicInsightsUITestCase extends NewRelicInsightsBehaviorTestBase {
         '%var' => $key,
       )));
     }
+
+    // Ensure that requisites were rebuilt with initial variable saves.
+    $rebuilt = $this->drupalGetHeader('x-insights-requisites-rebuilt', TRUE);
+    $this->assertTrue($rebuilt, 'Rebuilt entity and client requisites on initial save.');
+
+    // Filling out the form with a different query key rebuilds requisites.
+    $modified = $this->admin_values;
+    $modified['new_relic_insights_query_key'] .= '_altered';
+    $this->drupalPost('admin/config/services/new-relic-insights', $modified, 'Save configuration');
+    $rebuilt = $this->drupalGetHeader('x-insights-requisites-rebuilt', TRUE);
+    $this->assertTrue($rebuilt, 'Rebuilt entity and client requisites on query key update.');
+
+    // Filling out the form with the same query key does not do a rebuild.
+    $modified = $this->admin_values;
+    $modified['new_relic_insights_query_key'] .= '_altered';
+    $this->drupalPost('admin/config/services/new-relic-insights', $modified, 'Save configuration');
+    $rebuilt = $this->drupalGetHeader('x-insights-requisites-rebuilt', TRUE);
+    $this->assertFalse($rebuilt, 'Did not rebuild entity and client requisites when query key value remained the same.');
   }
 
 }
