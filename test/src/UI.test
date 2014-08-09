@@ -104,4 +104,27 @@ class NewRelicInsightsUITestCase extends NewRelicInsightsBehaviorTestBase {
     $this->assertFalse($rebuilt, 'Did not rebuild entity and client requisites when query key value remained the same.');
   }
 
+  /**
+   * Ensure that the core Statistics module's database logging can be disabled.
+   */
+  public function testShouldAllowAccesslogDisableDB() {
+    // Enable the statistics module and rebuild all data structure afterward.
+    $success = module_enable(array('statistics'));
+    $this->assertTrue($success, 'Enabled modules: statistics');
+    $this->resetAll();
+
+    // Create an admin user with proper credentials.
+    $account = $this->drupalCreateUser(array(
+      'access administration pages',
+      'administer statistics',
+    ));
+    $this->drupalLogin($account);
+
+    // Navigate to the statistics administration page and ensure our additional
+    // field is shown as expected.
+    $this->drupalGet('admin/config/system/statistics');
+    $this->assertFieldByName('statistics_log_to_db', TRUE, 'Found database log checkbox.');
+    $this->assertText('Uncheck this to log access statistics only via New Relic Insights.', 'Found helper text describing how to disable database logging.');
+  }
+
 }
