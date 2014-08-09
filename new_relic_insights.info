@@ -3,7 +3,12 @@ description = "Integrates Drupal with New Relic Insights."
 core = 7.x
 configure = admin/config/services/new-relic-insights
 
+; Hard dependencies.
 dependencies[] = remote_entity
+
+; Soft dependencies.
+recommends[] = better_statistics
+recommends[] = efq_views
 
 ; Entity API includes.
 files[] = src/Insight.inc
