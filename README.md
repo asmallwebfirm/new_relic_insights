@@ -1,106 +1,97 @@
-# New Relic Insights
+# New Relic Insights Integration
 
-This module integrates Drupal with New Relic Insights in a number of ways
-described below.
+This Drupal extension deeply integrates your Drupal application with the New
+Relic Insights service.
 
-### Watchdog Integration
 
-Watchdog integration can be configured at the main configuration page for this
-module. Watchdog integration is achieved by queueing messages logged to watchdog
-in the Drupal Queue. Queued messages are processed automatically on cron, but
-can also be processed manually in the following ways:
+### Features
 
-* If the [Drush Queue][] extension is installed, you can run
-  ``` drush queue-run new_relic_insights ```
-* You can also make a manual HTTP request to the following callback. When you do
-  so, ensure your actual cron key is appended:
-  ``` https://example.com/new-relic-insights-runner/your-cron-key-here```
+* Write data to your Insights database
+  * Insert native Drupal log events (watchdog)
+  * Decorate application transactions with custom attributes
+  * API for custom event / event type insertion
+* Query data in your Insights database
+  * Create Drupal Views of your Insights events
+  * API for advanced querying techniques within Drupal
 
-You may wish to manually trigger queued events in one of the aforementioned ways
-if you require real-time or near-real-time watchdog analysis.
 
-When the queue is processed, events are sent through New Relic's Insert API as
-events of type "watchdog."
+### Requirements
 
-The following fields are added to all watchdog events in Insights:
+* A [New Relic Insights](https://newrelic.com/insights) account
+* Requires PHP >= 5.3 with [cURL](https://php.net/manual/en/book.curl.php)
+* Requires [Remote Entity API](https://drupal.org/project/remote_entity) and its
+  dependencies.
+* [Better Statistics](https://drupal.org/project/better_statistics) and
+  [EntityFieldQuery Views Backend](https://drupal.org/project/efq_views) are
+  highly recommended.
 
-* __type__: The type of watchdog message being logged (often the module
-  responsible for generating the message).
-* __user__: The e-mail address of the user for whom the watchdog event was
-  logged. For anonymous users, this field will be blank.
-* __uid__: The user ID of the user for whom the watchdog event was logged. For
-  anonymous users, the value of this field would be 0.
-* __request_uri__: The request URI associated with the given watchdog event.
-* __referer__: The URI associated with the referring page prior to this request.
-* __ip__: The IP address from where the request for this page came.
-* __timestamp__: The UNIX timestamp of the date/time the event occurred.
-* __severity__: An integer representing the severity of this message (e.g. an
-  alert vs. a notice vs. a warning vs. an emergency, see below for details).
-* __fullMessage__: The fully processed message that you would normally see when
-  analyzing watchdog messages and other notices/ errors.
-* __message__: The raw, unprocessed message as it was passed to watchdog in
-  code. This may include replacement tokens.
 
-The following fields are optional and may or may not be passed along with events
-in Insights:
+### Installation and configuration
 
-* __links__: If a link/operation is associated with this watchdog event, it will
-  be included here as a full HTML anchor.
-* Variables: Some messages may include tokenized variables that are added when
-  processing the associated message. The names and contents of these variables
-  vary widely depending on the watchdog event being logged, but each token is
-  included as a separate field/column in Insights. The name used for the field is
-  the name of the token, prefixed with "_var_." For instance, in the following
-  raw message, the subsequent tokenized variables would be included:
-  ``` The node with nid %nid was edited by user with id !uid ```
-    * _var_nid: Would contain the associated node ID.
-    * _var_uid: Would contain the associated user ID.
+The best way to install this extension is to use
+[drush](https://github.com/drush-ops/drush)!
 
-Note that queueing of watchdog events for inserting into Insights does not
-interfere with the core dblog or syslog modules. It may be used in tandem with
-or independently of the aforementioned modules, depending on your use-case.
+```sh
+drush dl new_relic_insights
+drush en new_relic_insights
+```
 
-Note that there is currently no facility for reading back watchdog events once
-they are in Insights.
+To get started, you'll want to note your Insights account ID and register API
+keys for inserting and querying Insights data (according to your needs).
 
-### Accesslog Integration
+Configurations can be made through the UI at
+yoursite.com/admin/config/services/new-relic-insights.
 
-Accesslog integration can be configured at the main configuration page for this
-module. Accesslog integration depends on the [Better Statistics][] module.
-Integration is achieved by decorating the preexisting transaction with custom
-attributes provided by the core statistics module, as well as Better Statistics
-API implementers.
+See the [module configuration](doc/configuring.md) documentation for further
+details.
 
-The following fields are added to all transactions in Insights:
 
-* __title__: Page Title for the given transaction
-* __path__: Internal Drupal path for the given request, e.g. node/1
-* __url__: The http referer for the given transaction
-* __hostname__: The end-user's IP address for the given transaction
-* __uid__: The Drupal user ID for the given transaction
-* __sid__: The PHP Session ID for the given transaction
-* __timer__: The length of time, in seconds, the given transaction took to
-  generate from Drupal's perspective, probably redundant in the context of a New
-  Relic Transaction.
-* __timestamp__: The unix timestamp for the given transaction, also redundant in
-the context of a New Relic Transaction.
+### Usage
 
-The following fields, provided by Better Statistics can optionally be enabled in
-the Better Statistics config area. Any other fields provided by contributed
-modules are also available there.
-* __user_agent__: The full user-agent string for the given transaction, a bit
-  redundant but at least more verbose than what is provided by Insights.
-* __peak_memory__: The peak memory, in bytes, used by PHP for the given
-  transaction.
-* __cache__: Drupal page cache hit/miss stat for the given transaction (one of:
-  hit, miss, or null for uncacheable requests).
+This extension works on the principle that it's advantageous to treat analytics
+data--stored in New Relic Insights--as if it were native application data.
 
-Note that transaction decoration with these custom attributes does not interfere
-with the core Statistics or Better Statistics modules. It may be used in tandem
-with or independently of the aforementioned modules, depending on your use-case.
+This module provides a Drupal entity called an "Insight" whose data just happens
+to be stored externally. Piggybacking off of the entity system allows us to
+provide a Drupal-native interface to Insights that feels familiar to both site
+administrators and developers alike.
 
-Note that there is currently no facility for reading back accesslog metadata via
-transactions once they are in Insights.
+The speed and scalability of the Insights database, combined with the power and
+flexibility of Drupal's entity system, provide tantalizing use-cases:
 
-[drush queue]: https://drupal.org/project/drush_queue
-[better statistics]: https://drupal.org/project/better_statistics
+* Offload high-volume, high-value transactional data from your application
+  database and into Insights while maintaining fast access within your app.
+* Provide analytics to site administrators _in context_ by querying Insights
+  data keyed off of the content or account they're viewing.
+* Personalize end-user experiences in real-time by using contextual details at
+  render-time to query the wealth of historical data stored in Insights.
+
+Get started inserting and querying your data below:
+
+#### Writing data to Insights
+
+Although Insights provides a wealth of performance data in your Insights
+database out of the box, you will likely want to insert custom events or add
+custom data attributes to existing events.
+
+Currently, this module supports:
+* Writing watchdog events to Insights as custom events of type "watchdog"
+* Decorating Transactions with user-defined attributes.
+* Sending other custom events with arbitrary data.
+
+See the [inserting Insights data](doc/inserting.md) documentation for further
+details.
+
+
+#### Querying Insights data
+
+New Relic Insights allows you to query data in real time using a SQL-like query
+language called NRQL. This module allows you to query Insights in a variety of
+ways, exposing Insights data natively to Drupal.
+
+Currently, this module supports:
+* Creating Drupal Views that use Insights as their data source
+* Querying Insights using Drupal's native EntityFieldQuery query builder.
+* Executing custom NRQL queries and processing the returned data.
+
+See the [querying Insights](doc/querying.md) documentation for further details.

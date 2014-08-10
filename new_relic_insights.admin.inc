@@ -16,7 +16,7 @@ function new_relic_insights_settings($form_state) {
   $form['new_relic_insights_account_id'] = array(
     '#type' => 'textfield',
     '#title' => t('New Relic account ID'),
-    '#description' => t('Theaccount number associated with your Insights account.'),
+    '#description' => t('The account number associated with your Insights account.'),
     '#default_value' => variable_get('new_relic_insights_account_id', ''),
     '#required' => TRUE,
   );
